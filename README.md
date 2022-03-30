@@ -7,5 +7,5 @@
 - Create intermidiate low level code (fake instructions) of Alpha
 - Construct final machine code (executable) and virtual machine for an execution enviroment
 ## What is Alpha
-## Power of Alpha
+## Flexibility of Alpha
 ## Limitations
