@@ -9,3 +9,18 @@
 ## What is Alpha
 ## Flexibility of Alpha
 ## Limitations
+## Manual
+- to run::
+
+- use: "make" to compile 
+
+- use: "make clean" to clean 
+
+- use: ./parser "name1".txt  to run 
+                   |  
+                   V         
+                 input
+                      
+- output.txt will be generated
+
+*( one shift/reduce conflict of if/else ignore...will be implemented later ).*
