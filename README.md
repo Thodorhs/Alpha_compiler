@@ -4,7 +4,7 @@
 - Create lexical analizer using *flex/lex*  ✅
 - Create syntax analyzer using *yacc/bison* ✅
 - Create symbol table after syntax analize is done  ✅
-- Create intermidiate low level code (fake instructions) of Alpha ⌛ 
+- Create intermidiate low level code (fake instructions) of Alpha ⌛ *(almost done)*
 - Construct final machine code (executable) and virtual machine for an execution enviroment
 ## What is Alpha
 ## Flexibility of Alpha
@@ -16,10 +16,8 @@
 
 - use: "make clean" to clean 
 
-- use: ./parser "name1".txt  to run 
-                   |  
-                   V         
-                 input
+- use: ./parser "name1".txt *(input)* to run 
+                   
 Output:       
 - quads.txt - File with generated quads from input file
 - symbol_table.txt -  File with symbol table entries sorted by scope
