@@ -20,7 +20,7 @@
                    |  
                    V         
                  input
-                      
-- output.txt will be generated
+Output:       
+- quads.txt - File with generated quads from input file
+- symbol_table.txt -  File with symbol table entries sorted by scope
 
-*( one shift/reduce conflict of if/else ignore...will be implemented later ).*
