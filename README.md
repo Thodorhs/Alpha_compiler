@@ -18,7 +18,7 @@
 - use: **./intermed "name".txt** to run 
                    
 ***Output:***       
-- quads.txt - File with generated quads from input file
+- quads.txt - File with generated quads *(fake instructions)* from input file
 
 - symbol_table.txt -  File with symbol table entries sorted by scope
 
