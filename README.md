@@ -10,15 +10,15 @@
 ## Flexibility of Alpha
 ## Limitations
 ## Manual
-- to run::
+***Run:***
+- use: **make** to compile 
 
-- use: "make" to compile 
+- use: **make clean** to clean 
 
-- use: "make clean" to clean 
-
-- use: ./parser "name1".txt *(input)* to run 
+- use: **./intermed "name".txt** to run 
                    
-Output:       
+***Output:***       
 - quads.txt - File with generated quads from input file
+
 - symbol_table.txt -  File with symbol table entries sorted by scope
 
