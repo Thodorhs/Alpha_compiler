@@ -1,6 +1,6 @@
 #include "hashtable.hpp"
 
-ofstream file("symbol_table.txt");
+ofstream file("../../out/symbol_table.txt");
 static const char* lib_funcs[]={"print","input","objectmemberkeys","objecttotalmembers","objectcopy","totalarguments","argument","typeof","strtonum","sqrt","cos","sin"};
 
 HashTable::HashTable(size_t size){

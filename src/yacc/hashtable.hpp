@@ -45,6 +45,7 @@ typedef struct SymbolTableEntry {
         Function *funcVal;
     } value;
     unsigned iaddress;
+    unsigned taddress;
     unsigned totalLocals;
     enum SymbolType type;
 } SymbolTableEntry;

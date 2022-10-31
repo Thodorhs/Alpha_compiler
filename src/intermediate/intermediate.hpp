@@ -9,15 +9,15 @@
 using namespace std;
 
 typedef enum iopcode{
-    assign,         add,            sub,
-    mul,            Div,           mod,
-    uminus,         And,            Or,
-    Not,            if_eq,          if_noteq,
-    if_lesseq,      if_greatereq,   if_less,
-    if_greater,     call,           param,
-    ret,            getretval,      funcstart,
-    funcend,        tablecreate,    jump,
-    tablegetelem,   tablesetelem
+    assign=9,         add=0,            sub=1,
+    mul=2,            Div=3,           mod=4,
+    uminus=5,         And=333,            Or=334,
+    Not=335,            if_eq=12,          if_noteq=13,
+    if_lesseq=17,      if_greatereq=15,   if_less=16,
+    if_greater=14,     call=19,           param=18,
+    ret=22,            getretval=20,      funcstart=21,
+    funcend=23,        tablecreate=6,    jump=11,
+    tablegetelem=7,   tablesetelem=8,
 } iopcode;
 
 typedef enum expr_t{
@@ -58,6 +58,7 @@ typedef struct quad{
     expr * arg2;
     unsigned label;
     unsigned line;
+    unsigned taddress;
 } quad;
 int newlist(int i);
 int mergelist (int l1, int l2);
@@ -69,6 +70,7 @@ expr* newexpr(expr_t type, string charConst);
 expr* newexpr(expr_t type, bool boolConst);
 expr* newexpr(expr_t type, SymbolTableEntry* sym);
 expr* newexpr(SymbolTableEntry* sym);
+expr* newexpr(SymbolTableEntry* sym,char c);
 expr* member_item(expr* lv,string name,HashTable* table,unsigned scope,unsigned line);
 void emit(iopcode op, expr* result, expr* arg1, expr* arg2, unsigned label, unsigned line);
 expr* emit_iftableitem(expr* e,HashTable* table, unsigned scope, unsigned line);
@@ -101,4 +103,5 @@ void to_bool(expr *a,unsigned line);
 void emitR(iopcode type, expr *res, expr *a, expr *b,unsigned yylineno);
 vector <unsigned> merge(vector <unsigned> l1,vector <unsigned>l2);
 void backpatch(vector<unsigned>&list, unsigned label);
+void patch_func_start_jump(unsigned i);
 #endif

@@ -11,6 +11,9 @@ unsigned functionLocalOffset=0;
 unsigned formalArgOffset=0;
 unsigned scopeSpaceCounter=1;
 
+void patch_func_start_jump(unsigned i){
+quads[i]->label=currquad+2;
+}
 void save_offsets(){
     func_offs.push(functionLocalOffset);
     form_offs.push(formalArgOffset);
@@ -182,12 +185,38 @@ expr* newexpr(SymbolTableEntry* sym){
     e->sym = sym;
     return e;
 }
-
+expr* newexpr(SymbolTableEntry* sym,char c){
+    expr* e = new expr;
+    switch (sym->type)
+    {
+        case LOCAL1:
+            e->type = var_e;
+            break;
+        case GLOBAL:
+            e->type = var_e;
+            break;
+        case FORMAL:
+            e->type = var_e;
+            break;
+        case LIBFUNC:
+            e->type = libraryfunc_e;
+            break;
+        case USERFUNC:
+            e->type = programfunc_e;
+            sym->taddress=currquad;
+            break;
+        default:
+            assert(0);
+            break;
+    }
+    e->sym = sym;
+    return e;
+}
 expr* member_item(expr* lv,string name,HashTable* table, unsigned scope, unsigned line){
     lv=emit_iftableitem(lv,table,scope,line);
     expr* ti=newexpr(tableitem_e);
     ti->sym=lv->sym;
-    ti->index=newexpr(tableitem_e,name); //????tableitem_e
+    ti->index=newexpr(conststring_e,name); //????tableitem_e
     return ti;
 }
 
@@ -203,6 +232,7 @@ void emit(iopcode op, expr* result, expr* arg1, expr* arg2, unsigned label, unsi
     quads.push_back(q);
     currquad++;
 }
+
 
 expr* emit_iftableitem(expr* e,HashTable* table, unsigned scope, unsigned line){
     if(e->type!=tableitem_e){
@@ -267,6 +297,7 @@ expr* tempcheck(expr_t type, expr* a, HashTable* table,unsigned scope , unsigned
                
                     tmp=new string(a->sym->value.varVal->name);
                     if((*tmp)[0]=='_'){
+                        a->type=type;
                         return a;
                     }
                 
@@ -285,6 +316,7 @@ expr* tempcheck(expr_t type, expr* a, expr* b, HashTable* table,unsigned scope ,
                    
                         tmp=new string(a->sym->value.varVal->name);
                         if((*tmp)[0]=='_'){
+                            a->type=type;
                             return a;
                         }
                     
@@ -298,6 +330,7 @@ expr* tempcheck(expr_t type, expr* a, expr* b, HashTable* table,unsigned scope ,
                 
                     tmp=new string(b->sym->value.varVal->name);
                     if((*tmp)[0]=='_'){
+                        b->type=type;
                         return b;
                     }
                 
@@ -390,6 +423,7 @@ static void printArg(expr* exp){
             }
         }
     }else{
+        
         if(exp->sym->type==GLOBAL||exp->sym->type==LOCAL1){
             cout<<exp->sym->value.varVal->name<<" ";
         }

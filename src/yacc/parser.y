@@ -3,6 +3,7 @@
     #include<fstream>
     #include "al.hpp"
     #include "../intermediate/intermediate.hpp"
+    #include "../target/target.hpp"
     extern int yylex();
     int yyerror(const char *yaccProvidedMessage);
     const char* filename;
@@ -27,6 +28,8 @@
     stack <int> stack_lc;
     struct stmt_t;
     typedef struct stmt_t stmt_t;
+    stack<vector<unsigned>*> returnLists;
+    stack <int> func_start_jump_label;
 %}
 
 %union{
@@ -124,7 +127,10 @@ stmt:   expr SEMICOLON {    resettemp();
         |ifstmt {resettemp();$$=$1;}
         |whilestmt {resettemp();$$.breaklist=0;$$.contlist=0;}
         |forstmt {resettemp();$$.breaklist=0;$$.contlist=0;}
-        |returnstmt {resettemp();$$.breaklist=0;$$.contlist=0;}
+        |returnstmt {resettemp();$$.breaklist=0;$$.contlist=0;
+                        returnLists.top()->push_back(nextquadlabel());
+                        emit(jump,NULL,NULL,NULL,0,yylineno);
+                    }
         |break {$$=$1;}
         |continue {$$=$1;}
         |block {resettemp();$$=$1;}
@@ -277,12 +283,18 @@ expr:   assignexpr {$$ = $1;}
     ;
 term: LEFT_PARENTHESIS expr RIGHT_PARENTHESIS{$$=$2;}
     | NOT expr{
-                    if($2->type!=boolexpr_e){
-                        to_bool($2,yylineno);
+                    
+                   
+                    if($2->type!=boolexpr_e){                        
+                        $2->true_l.push_back(nextquadlabel());
+                        $2->false_l.push_back(nextquadlabel()+1);
+                        emit(if_eq,$2,newexpr(constbool_e,true),NULL,0,line);
+                        emit(jump,NULL,NULL,NULL,0,line);
                     }
                     $$ = tempcheck(boolexpr_e,$2,table,scope,yylineno);
+                    vector <unsigned> vec=$2->true_l;
                     $$->true_l=$2->false_l;
-                    $$->false_l=$2->true_l;
+                    $$->false_l=vec;
                 }
     | MINUS expr %prec UMINUS {
                                     check_arith($2,filename,yylineno);
@@ -360,7 +372,7 @@ assignexpr: lvalue{if(lval&&memberflag==0){if(lval->type==LIBFUNC||lval->type==U
                                                                                                                                                             }
           ;
 primary: lvalue{$$=emit_iftableitem($1,table,scope,line);/*$$=$1*/}
-       | call
+       | call{$$=$1;$$->type=var_e;}
        | objectdef
        | LEFT_PARENTHESIS funcdef RIGHT_PARENTHESIS {
                                                         $$=newexpr(programfunc_e,$2);
@@ -389,10 +401,10 @@ lvalue: IDENT{memberflag=0;
                         table->insert(true,GLOBAL,((string*)(yylval.data))->c_str(),scope, yylineno);
 
                     lval=table->lookup(((string*)(yylval.data))->c_str(),scope);
+                    lval->space=currscopespace();
+                    lval->offset=currscopeoffset();
+                    incurrscopeoffset();
                 }
-                lval->space=currscopespace();
-                lval->offset=currscopeoffset();
-                incurrscopeoffset();
             }
             $$=newexpr(lval);
       }
@@ -478,7 +490,7 @@ methodcall: DOUBLE_DOT IDENT {id=((string*)(yylval.data));} LEFT_PARENTHESIS eli
                                                                         $$->boolConst=true;
                                                                     }
     ;
-elist: expr elists {if ($2==NULL){head=$1;$$=head;curr=head;}else{$$=head;curr=$1;$2->next=$1;n=0;}
+elist: expr elists {if ($2==NULL){head=$1;/*head->next=NULL;*/$$=head;curr=head;}else{$$=head;curr=$1;$2->next=$1;n=0;}
                     if($1->type==boolexpr_e){
                                 backpatch($1->true_l,nextquadlabel());
                                 backpatch($1->false_l,nextquadlabel()+2);
@@ -561,10 +573,12 @@ funcprefix:FUNCTION funcname{
                                 }
                                 enterscopespace();
                                 save_offsets();
-                                temp=table->lookup(((string*)($2))->c_str());
+                                temp=table->lookup(((string*)($2))->c_str(),scope);
                                 temp->iaddress=nextquadlabel();
                                 $$=temp;
-                                emit(funcstart,NULL,newexpr($$),NULL,0,yylineno);
+                                func_start_jump_label.push(nextquadlabel());
+                                emit(jump,NULL,NULL,NULL,0,yylineno);
+                                emit(funcstart,NULL,newexpr($$,'\0'),NULL,0,yylineno);
                             }
 ;
 funcargs:LEFT_PARENTHESIS{scope++;insideFunction=true;} idlist RIGHT_PARENTHESIS{
@@ -574,6 +588,8 @@ funcargs:LEFT_PARENTHESIS{scope++;insideFunction=true;} idlist RIGHT_PARENTHESIS
                                                                                 func.lastfunctioncall=(unsigned int) scope+1;
                                                                                 stack_lc.push(loopcounter);
                                                                                 loopcounter=0;
+                                                                                vector <unsigned> *list=new vector<unsigned>();
+                                                                                returnLists.push(list);
                                                                                 }
 ;
 funcbody: block{
@@ -589,9 +605,14 @@ funcdef: funcprefix funcargs funcbody {
                                         $1->totalLocals=$3;
                                         reset_offsets();
                                         $$=$1;
+                                        patch_func_start_jump(func_start_jump_label.top());
+                                        func_start_jump_label.pop();
                                         emit(funcend,NULL,newexpr($1),NULL,0,yylineno);
                                         loopcounter=stack_lc.top();
                                         stack_lc.pop();
+                                        vector <unsigned> *list=returnLists.top();
+                                        backpatch(*list,nextquadlabel());
+                                        returnLists.pop();
                                       }
        ;
 const: INTCONST {
@@ -746,20 +767,30 @@ forprefix: FOR LEFT_PARENTHESIS elist SEMICOLON M expr SEMICOLON {
     }
     $$.test=$5;
     $$.enter=nextquadlabel();
-    emit(if_eq,NULL,$6,newexpr(constbool_e,true),0,yylineno);
+    emit(if_eq,NULL,newexpr(constbool_e,true),$6,0,yylineno);
 }
 ;
 forstmt: forprefix N elist RIGHT_PARENTHESIS N loopstmt N{
     patchlabel($1.enter,$5+1+1);
     patchlabel($2,nextquadlabel()+1);
     patchlabel($5,$1.test+1);
-    patchlabel($7,$2+1+1);
+    patchlabel($7,$2+1+1);//edw
     patchlist($6.breaklist,nextquadlabel()+1);
     patchlist($6.contlist,$2+1+1);
 }
 ;
-returnstmt: RETURN{if(!insideFunction){ comperror("Cannot RETURN while outside of function",filename,yylineno);}} expr SEMICOLON{emit(ret,$3,NULL,NULL,0,yylineno );}
-          | RETURN{if(!insideFunction){ comperror("Cannot RETURN while outside of function",filename,yylineno);}} SEMICOLON{emit(ret,NULL,NULL,NULL,0,yylineno );}
+returnstmt: RETURN{if(func.openfunction==func.closefunction){ comperror("Cannot RETURN while outside of function",filename,yylineno);}} expr SEMICOLON{
+     if($3->type==boolexpr_e){
+                        backpatch($3->true_l,nextquadlabel());
+                        backpatch($3->false_l,nextquadlabel()+2);
+                        emit(assign,$3,newexpr(constbool_e,true),NULL,0,yylineno);
+                        emit(jump,NULL,NULL,NULL,nextquadlabel()+3,yylineno);
+                        emit(assign,$3,newexpr(constbool_e,false),NULL,0,yylineno);
+                    }
+                    emit(ret,$3,NULL,NULL,0,yylineno );
+
+}
+          | RETURN{if(func.openfunction==func.closefunction){ comperror("Cannot RETURN while outside of function",filename,yylineno);}} SEMICOLON{emit(ret,NULL,NULL,NULL,0,yylineno );}
           ;
 
 
@@ -779,7 +810,7 @@ int main(int argc,char* argv[]) {
         assert( yyout != NULL );
     }else if(argc==2){
         yyin= fopen( argv[1], "r" );
-        yyout = fopen("quads.txt", "w" );
+        yyout = fopen("../out/quads.txt", "w" );
         filename=argv[1];
         assert( yyin != NULL );
         assert( yyout != NULL );
@@ -793,5 +824,6 @@ int main(int argc,char* argv[]) {
     fclose(yyin);
     fclose(yyout);
     *stdout=fp;
+    generate();
     return 0;
 }
