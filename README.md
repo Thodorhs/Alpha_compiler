@@ -18,13 +18,13 @@
 ## Flexibility of Alpha
 ## Limitations
 ## Prerequisites
-- Make ***apt install make***
+- Make || ***apt install make***
 
-- g++ ***apt install g++***
+- g++ || ***apt install g++***
 
-- Flex ***apt install flex***
+- Flex || ***apt install flex***
 
-- Bison ***apt install bison***
+- Bison || ***apt install bison***
 
 ## Manual
 ***Run:***
