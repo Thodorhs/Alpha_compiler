@@ -35,7 +35,7 @@
 - use: **run.sh -h** for help.
 
 ***Generated files:***
-- out directory is created. IF not present run.sh proceeds to make clean and then make all *(compile)*.
+- ***out*** directory is created. IF not present run.sh proceeds to make clean and then make all *(compile)*.
 
 - out/quads.txt - File with generated quads *(pseudo-assembly)* from input file.
 
