@@ -37,9 +37,9 @@
 ***Generated files:***
 - ***out*** directory is created. IF not present run.sh proceeds to make clean and then make all *(compile)*.
 
-- out/quads.txt - File with generated quads *(pseudo-assembly)* from input file.
+- ***out/quads.txt*** - File with generated quads *(pseudo-assembly)* from input file.
 
-- out/instructions.txt -  File with vm instructions.
+- ***out/instructions.txt*** -  File with vm instructions.
 
 - The rest are not to be taken under consideration.
 
